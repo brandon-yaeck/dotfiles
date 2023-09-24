@@ -1,0 +1,228 @@
+#
+# bspwm general
+#
+
+#super + alt + Escape
+#	bspc quit
+
+
+#super + {_,shift + }w
+#	bspc node --{close,kill} && bspc node --focus biggest.local && bspc node @brother --balance && bspc node --focus last
+
+super + {_,shift + }w
+	bspc node --{close,kill}
+	
+super + v
+	bspc node --flag hidden
+
+super + shift + v
+	bspc query --nodes -n .hidden.local | xargs -I NODEID -n 1 bspc node NODEID --flag hidden=off
+
+super + ctrl + v
+	for id in $(bspc query --desktops); do bspc node @${id}:/ --flag hidden; done
+
+super + t
+	bspc desktop --layout next
+
+super + n
+	bspc config window_gap 0; bspc config border_width 0
+
+super + shift + n
+	bspc config window_gap 8; bspc config border_width 2
+
+super + x
+	bspc node --state \~floating
+
+super + f
+	bspc node --flag private
+
+
+
+#
+# bspwm desktop movement
+#
+
+super + bracket{left,right}
+	bspc desktop --focus {prev,next}.local
+
+# change to specified desktop, shift to move window to specified desktop
+super + {_,shift + }{1-9}
+	bspc {desktop --focus,node --to-desktop} ^{1-9}
+
+
+
+super + e
+	moveddesk=$(bspc query --nodes --node focused); \
+	bspc desktop --to-monitor next; \
+	bspc monitor DVI-I-1 --reorder-desktops M2A M2B; \
+	bspc monitor HDMI-0 --reorder-desktops M1A M1B M1C M1D M1E; \
+	bspc node --focus $moveddesk
+
+
+
+
+
+#
+# bspwm window movement
+#
+
+super + {_,shift + }c
+	bspc node --focus {next,prev}.local.window
+
+super + grave
+	bspc node --focus last
+
+super + Tab
+	if bspc wm --get-status | grep MHDMI-0 &> /dev/null ; then \
+		bspc desktop --focus last.local; \
+	else \
+		bspc monitor --focus HDMI-0; \
+	fi
+
+super + apostrophe
+	bspc node --swap last
+
+super + m
+	bspc node --swap biggest.local
+
+super + {h,j,k,l}
+	bspc node --swap {west,south,north,east}
+
+super + {comma,period}
+	bspc node @/ --circulate {backward,forward}
+
+super + {r,shift + r,u}
+	bspc node @/ --rotate {90,-90,180}
+
+super + {backslash,shift + backslash}
+	bspc node @/ --flip {vertical,horizontal}
+
+# cycles through history of previously focused windows, disabling the history while cycling to preserve original
+super + {o,i}
+	bspc wm --record-history off; \
+	bspc node {older,newer} --focus; \
+	bspc wm --record-history on
+
+
+
+
+
+#
+# bspwm window sizing
+#
+
+# EXPAND the area of the current window
+super + alt + {h,j,k,l}
+	bspc node --resize {left -20 0,bottom 0 20,top 0 -20,right 20 0}
+
+# CONTRACT the area of the current window
+super + alt + shift + {h,j,k,l}
+	bspc node --resize {right -20 0,top 0 20,bottom 0 -20,left 20 0}
+
+# balance sizes of all windows in desktop to occupy the same area
+super + b
+	bspc node --focus biggest.local && bspc node @brother --balance && bspc node --focus last
+
+
+
+
+
+#
+# bspwm manual mode
+#
+
+super + ctrl + {h,j,k,l}
+	bspc node --presel-dir {west,south,north,east}
+
+super + ctrl + space
+	bspc node --presel-dir cancel
+
+# sets the ratio for the preselect area
+super + ctrl + {1-9}
+	bspc node --presel-ratio 0.{1-9}
+
+# move window into the last preselect
+super + y
+	bspc node --to-node last.!automatic
+
+
+
+
+
+
+
+
+
+
+#
+# wm independent hotkeys
+#
+
+#super + Return
+#if [[ $(bspc query -N -n biggest.local) == $(bspc query -N -n .focused.local) ]]; then bspc node --focus prev.local; fi; urxvt &!; sleep 0.1s; bspc node --focus biggest.local && bspc node @brother --balance && bspc node --focus last
+super + Return
+	if [[ $(bspc query -N -n biggest.local) == $(bspc query -N -n .focused.local) ]]; then bspc node --focus prev.local; fi; alacritty
+
+super + z
+	firefox
+
+#wpctl (default wireplumber cli) doesn't prevent volume going over 100% without having to script it manually by getting the current audio volume and checking etc
+#wpctl also doesn't allow unmuting with volume increase in a single command
+#pamixer (third party) does both of these so using it for ease
+super + a
+	pamixer --unmute --increase 5
+
+super + s
+	wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+
+super + shift + a
+	wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+
+super + ctrl + a
+	~/scripts/windowvol +5%
+
+super + ctrl + s
+	~/scripts/windowvol -5%
+
+super + ctrl + shift + a
+	~/scripts/windowvol mute
+
+super + ctrl + d
+	~/scripts/windowvol 100%
+
+super + ctrl + f
+	pavucontrol
+
+super + shift + d
+	mpc -q toggle
+
+super + shift + {z,x}
+	mpc -q {prev,next}
+
+super + d
+	~/scripts/timepopup
+
+super + g
+	rofi -modi run,window -show run
+
+super + q
+	~/scripts/searchclip
+
+super + shift + q
+	~/scripts/roficlip
+
+Print
+	maim --window=$(xdotool getactivewindow) "/mnt/storage3t/images/snapshots/screen/$(date +%Y-%m-%d-%H%M%S).png"
+
+ctrl + Print
+	maim --geometry="$(slop)" "/mnt/storage3t/images/snapshots/screen/$(date +%Y-%m-%d-%H%M%S).png"
+
+alt + Print
+	maim "/mnt/storage3t/images/snapshots/screen/$(date +%Y-%m-%d-%H%M%S).png"
+
+#ctrl + Print
+#~/scripts/ssupload
+
+# make sxhkd reload its configuration files:
+super + Escape
+	pkill -USR1 -x sxhkd

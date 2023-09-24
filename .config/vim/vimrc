@@ -1,0 +1,188 @@
+if !has('nvim')			" Settings that only need to apply to original vim
+	set nocompatible	" Vi incompatible settings (must be first as it affects other options)
+
+	set runtimepath=$XDG_CONFIG_HOME/vim,$VIM,$VIMRUNTIME,$XDG_CONFIG_HOME/vim/after	" .vim config directory
+	set directory=~/.cache/vim/swap//,/tmp		" swap file directory
+	set history=1000				" lines of command and search history kept (10 000 by default in neovim)
+	set viminfo+=<1000				" possible to copy up to 1000 lines (default 50)
+	set viminfo+=n~/.local/share/vim/viminfo	" viminfo directory, old sessions will use and recreate old location, this MUST BE THE LAST SET VIMINFO
+	set packpath+=$XDG_CONFIG_HOME/vim		" location to find the pack directory where plugins are installed
+
+	set hidden					" allow multiple files by hiding instead of closing (on by default in neovim)
+	set autoindent					" auto indent on newline if starting from indent (on by default in neovim)
+	set showcmd					" display incomplete commands in bottom right (on by default in neovim)
+	set laststatus=2				" always show statusline (2 by default in neovim)
+	set hlsearch					" search result highlighting (on by default in neovim)
+	set incsearch					" show matches while typing search pattern (on by default in neovim)
+	" turn off current search highlighting
+	map <silent> ` :nohlsearch<CR>
+	" ctrl-U in insert mode cannot be undone unless we break the undo with ctrl-g u
+	" default in neovim now along with ctrl-w
+	inoremap <C-U> <C-G>u<C-U>
+elseif has('nvim')
+	autocmd FileType * set formatoptions-=c " don't auto wrap comments
+	autocmd FileType * set formatoptions-=r " don't auto continue comments on <ENTER>
+	autocmd FileType * set formatoptions-=o " don't auto continue comments on o
+	filetype plugin indent off			" dont auto newline after a certain line length
+	" rebind turn off current search highlighting
+	map ` <C-l>
+endif
+
+
+
+set linebreak		" wrap lines at end of word rather than mid
+set ttimeoutlen=0	" allows exiting insert mode instantly and removes lag on O, may cause issues with key combinations
+set spelllang=en_ca,cjk " Canadian spellcheck, ignore east asian
+set ignorecase		" case insensitive searching
+set smartcase		" disable ignorecase when inputting uppercase
+set mouse=a		" enable mouse in all modes
+set backspace=indent,eol,nostop			" allow backspacing over everything in insert mode
+set scrolloff=5		" minimum visible lines above and below cursor
+set number		" number lines
+set relativenumber	" lines are numbered relative to current line, useful for calculating motions
+set cursorline		" highlight current line
+set shortmess+=I	" disable intro message when opening vim
+
+set statusline=%<%F\ (%LL)\ %#WarningMsg#%M%#ErrorMsg#%R%##%=%y[%{&ff}][%{&fenc}]\ %4P
+
+set undofile		" persistent undo history after closing
+set undodir=/tmp/vimundo
+" set backup		" keep a backup file
+" set backupdir=$XDG_CACHE_HOME/vim/backup
+" set backup files to contain timestamp in format _YYYYMMDD-HHMM
+" autocmd BufWritePre * let &backupext = '_' . strftime("%Y%m%d-%H%M")
+
+
+syntax on		" syntax highlighting
+colorscheme custom_dark
+
+" automatically enable the Colorizer plugin for certain filetypes, note it's laggy for huge files
+" let g:colorizer_auto_filetype='css,html'
+
+
+" set leader key to something to use backslash without conflict
+let mapleader="Z"
+
+" toggle spellcheck
+map s :set spell! spell?<CR>
+
+
+
+" set nerdtree options
+let g:NERDTreeSortHiddenFirst=0
+let g:NERDTreeMinimalUI=1
+let g:NERDTreeShowHidden=1
+
+" browse current working directory
+map <silent> <F1> :e .<CR>
+
+" browse directory of current file
+map <silent> <F2> :e %:p:h<CR>
+
+" show buffer list using BufExplorer
+map <silent> <F3> :BufExplorer<CR>
+
+" toggle colorcolumn
+map <F4> :call ColorColumnToggle()<CR>
+function! ColorColumnToggle()
+	if &colorcolumn
+		setlocal cc=0
+	else
+		setlocal cc=81
+	endif
+endfunction
+
+" show marks, show registers
+map <F5> :marks<CR>
+map <F6> :registers<CR>
+
+" toggle relative line numbering
+map <F7> :set relativenumber! relativenumber?<CR>
+
+" preview colour scheme
+map <F8> :so $VIMRUNTIME/syntax/hitest.vim<CR>
+
+" open CtrlP buffer list
+map <Space> :CtrlPBuffer<CR>
+" open CtrlP MRU list.
+map <F9> :CtrlPMRU<CR>
+" open CtrlP MRU list. for some reason NUL is ctrl-space
+"map <NUL> :CtrlPMRU<CR>
+" unmap ctrl-space from insert mode as it does weird stuff
+"imap <NUL> <Nop>
+
+" toggle Colorizer plugin
+map <F10> :ColorToggle<CR>
+
+" show file's git backup history
+map <F11> :call OpenCurrentFileBackupHistory()<CR>
+
+" backspace and backslash go backwards and forwards in cursor location
+noremap <BS> <C-o>
+noremap <Bslash> <C-i>
+
+" tab switches between last used file (same as ctrl-6)
+noremap <Tab> <C-^>
+
+" exit on q
+map q :q<CR>
+
+" replace Q EX mode with record macro
+noremap Q q
+
+" yank to system clipboard
+map Y "*y
+
+" change buffers
+map <silent> - :bprev<CR>
+map <silent> = :bnext<CR>
+
+" faster substitute command
+map K :%s/
+
+" map pasting from system clipboard
+" pasting text in insert mode using <C-r> inserts it as if you are typing it all, meaning it will get auto intended
+" <C-r><C-o> prevents the auto indenting. This is also default bound to middle mouse pasting
+map! <C-v> <C-r><C-o>+
+
+
+" auto fix following words in insert mode (ctrl-v at the end of word to avoid auto fix)
+iabbrev teh the
+
+
+
+" command to see unsaved changes to current file
+if !exists(":DiffOrig")
+  command DiffOrig vert new | set bt=nofile | r ++edit # | 0d_ | diffthis
+		  \ | wincmd p | diffthis
+endif
+
+
+
+let fcitx5state=system("fcitx5-remote")
+" Disable the input method when exiting insert mode and save the state
+autocmd InsertLeave * :silent let fcitx5state=system("fcitx5-remote")[0] | silent !fcitx5-remote -c
+" 2 means that the input method was opened in the previous state, and the input method is started when entering the insert mode
+autocmd InsertEnter * :silent if fcitx5state == 2 | call system("fcitx5-remote -o") | endif
+
+
+
+
+set sessionoptions=blank,buffers,folds,help,tabpages,winsize " prevent sessions from saving options and working directory
+
+augroup open_and_close_events
+	" clear all existing autocommands so duplicates aren't created when sourcing the vimrc file again
+	autocmd!
+
+	" always jump to the last known cursor position unless invalid or first line
+	autocmd BufReadPost *
+	    \ if line("'\"") > 1 && line("'\"") <= line("$") |
+	    \   exe "normal! g`\"" |
+	    \ endif
+
+	" autoload the session when running vim
+	autocmd VimEnter * nested :call sessionpersist#LoadSession()
+
+	" autosave the session on exiting vim
+	autocmd VimLeave * nested :call sessionpersist#UpdateSession()
+augroup END
